@@ -8,6 +8,7 @@ services:
       - "80"
     environment:
       VIRTUAL_HOST: ${HOST_DOMAIN}
+      WS_HOST: wss://${HOST_DOMAIN}
       LETSENCRYPT_HOST: ${HOST_DOMAIN}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
       DEPLOY_API: ${DEPLOY_API}
