@@ -33,7 +33,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseStaticFiles();
 
