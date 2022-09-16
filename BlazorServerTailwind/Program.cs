@@ -11,8 +11,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<LocalStorage>();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/") });
-builder.Services.AddBlazorApiClient(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/"); // builder.HostEnvironment.BaseAddress);
+var baseUrl = Environment.GetEnvironmentVariable("DEPLOY_API");
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl ?? builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/") });
+builder.Services.AddBlazorApiClient(baseUrl ?? builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/"); // builder.HostEnvironment.BaseAddress);
 
 builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<ServiceStackStateProvider>());
 builder.Services.AddScoped<ServiceStackStateProvider>();
