@@ -9,7 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor(options =>
+{
+    options.DetailedErrors = true;
+});
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<LocalStorage>();
 var baseUrl = Environment.GetEnvironmentVariable("DEPLOY_API");
