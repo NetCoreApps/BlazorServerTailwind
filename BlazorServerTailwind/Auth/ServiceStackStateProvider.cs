@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
 
@@ -48,13 +49,15 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
 {
     private ApiResult<AuthenticateResponse> authApi = new();
     private readonly JsonApiClient client;
+    private ProtectedLocalStorage protectedLocalStorage;
 
     ILogger<ServiceStackStateProvider> Log { get; }
 
-    public ServiceStackStateProvider(JsonApiClient client, ILogger<ServiceStackStateProvider> log)
+    public ServiceStackStateProvider(JsonApiClient client, ILogger<ServiceStackStateProvider> log, ProtectedLocalStorage protectedLocalStorage)
     {
         this.client = client;
         this.Log = log;
+        this.protectedLocalStorage = protectedLocalStorage;
     }
 
     public AuthenticateResponse? AuthUser => authApi.Response;
@@ -64,7 +67,7 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
     {
         try
         {
-            var authResponse = authApi.Response;
+            var authResponse = authApi.Response ?? (await RecoverAuthenticationState());
             if (authResponse == null)
             {
                 Log.LogInformation("Checking server /auth for authentication");
@@ -106,6 +109,13 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
+
+    private async Task<AuthenticateResponse?> RecoverAuthenticationState()
+    {
+        var existingAuthResponse = await protectedLocalStorage.GetAsync<AuthenticateResponse?>("ss-authresponse");
+        return existingAuthResponse.Value;
+    }
+
     public async Task LogoutIfAuthenticatedAsync()
     {
         var authState = await GetAuthenticationStateAsync();
@@ -117,6 +127,7 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
     {
         var logoutResult = await client.ApiAsync(new Authenticate { provider = "logout" });
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        await protectedLocalStorage.SetAsync("ss-authresponse", null);
         authApi.ClearErrors();
         return logoutResult;
     }
@@ -140,11 +151,13 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
 
     public async Task<ApiResult<AuthenticateResponse>> LoginAsync(string email, string password)
     {
-        return await SignInAsync(await client.ApiAsync(new Authenticate
+        var authResult = await SignInAsync(await client.ApiAsync(new Authenticate
         {
             provider = "credentials",
             Password = password,
             UserName = email,
         }));
+        await protectedLocalStorage.SetAsync("ss-authresponse", authResult.Response);
+        return authResult;
     }
 }
