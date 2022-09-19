@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Markdig" Version="0.30.3" />
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
         <PackageReference Include="ServiceStack" Version="6.*" />
         <PackageReference Include="ServiceStack.Blazor" Version="6.*" />
         <PackageReference Include="ServiceStack.OrmLite.Sqlite.Data" Version="6.*" />
@@ -34,5 +35,6 @@
 
     <PropertyGroup>
         <TestsDir>$(MSBuildProjectDirectory)/../BlazorServerTailwind.Tests</TestsDir>
+        <UserSecretsId>ee4cc882-d0c7-45d5-b306-6b9dcbeb1924</UserSecretsId>
     </PropertyGroup>
 </Project>
