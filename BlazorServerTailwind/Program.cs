@@ -21,7 +21,7 @@ builder.Services.AddBlazorApiClient(builder.Configuration["ApiBaseUrl"] ?? "http
 
 builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<ServiceStackStateProvider>());
 builder.Services.AddScoped<ServiceStackStateProvider>();
-
+builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("/app/App_Data/"));
 
 
 var app = builder.Build();
@@ -32,7 +32,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
-    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("/app/App_Data/"));
 }
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
