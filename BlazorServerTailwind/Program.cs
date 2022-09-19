@@ -16,6 +16,7 @@ builder.Services.AddServerSideBlazor().AddCircuitOptions(o =>
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<LocalStorage>();
 var baseUrl = Environment.GetEnvironmentVariable("DEPLOY_API");
+baseUrl = baseUrl == null ? baseUrl : "https://" + baseUrl;
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl ?? builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/") });
 builder.Services.AddBlazorApiClient(baseUrl ?? builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/"); // builder.HostEnvironment.BaseAddress);
 
