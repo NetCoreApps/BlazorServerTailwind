@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -50,6 +51,7 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
     private ApiResult<AuthenticateResponse> authApi = new();
     private readonly JsonApiClient client;
     private ProtectedLocalStorage protectedLocalStorage;
+    private bool hasInit = false;
 
     ILogger<ServiceStackStateProvider> Log { get; }
 
@@ -60,6 +62,39 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
         this.protectedLocalStorage = protectedLocalStorage;
     }
 
+    private async Task Init()
+    {
+
+        var accessToken = await RecoverAccessToken();
+        if(accessToken != null)
+        {
+            client.BearerToken = accessToken;
+            client.GetHttpClient().DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+        var refreshToken = await RecoverRefreshToken();
+        if(refreshToken != null)
+            client.RefreshToken = refreshToken;
+        hasInit = true;
+    }
+
+    private async Task<string> RecoverAccessToken()
+    {
+        var val = await protectedLocalStorage.GetAsync<string>(Keywords.TokenCookie);
+        return val.Value;
+    }
+
+    private async Task<string> RecoverRefreshToken()
+    {
+        var val = await protectedLocalStorage.GetAsync<string>(Keywords.RefreshTokenCookie);
+        return val.Value;
+    }
+
+    private async Task ClearLocalTokenStorage()
+    {
+        await protectedLocalStorage.DeleteAsync(Keywords.TokenCookie);
+        await protectedLocalStorage.DeleteAsync(Keywords.RefreshTokenCookie);
+    }
+
     public AuthenticateResponse? AuthUser => authApi.Response;
     public bool IsAuthenticated => authApi.Response != null;
 
@@ -67,7 +102,10 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
     {
         try
         {
-            var authResponse = authApi.Response ?? (await RecoverAuthenticationState());
+            if (!hasInit)
+                await Init();
+
+            var authResponse = authApi.Response;
             if (authResponse == null)
             {
                 Log.LogInformation("Checking server /auth for authentication");
@@ -110,12 +148,6 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
         }
     }
 
-    private async Task<AuthenticateResponse?> RecoverAuthenticationState()
-    {
-        var existingAuthResponse = await protectedLocalStorage.GetAsync<AuthenticateResponse?>("ss-authresponse");
-        return existingAuthResponse.Value;
-    }
-
     public async Task LogoutIfAuthenticatedAsync()
     {
         var authState = await GetAuthenticationStateAsync();
@@ -127,7 +159,7 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
     {
         var logoutResult = await client.ApiAsync(new Authenticate { provider = "logout" });
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
-        await protectedLocalStorage.SetAsync("ss-authresponse", null);
+        await ClearLocalTokenStorage();
         authApi.ClearErrors();
         return logoutResult;
     }
@@ -157,7 +189,14 @@ public class ServiceStackStateProvider : AuthenticationStateProvider
             Password = password,
             UserName = email,
         }));
-        await protectedLocalStorage.SetAsync("ss-authresponse", authResult.Response);
+
+        if(authResult.Succeeded && authResult.Response != null)
+        {
+            await protectedLocalStorage.SetAsync(Keywords.TokenCookie, authResult.Response.BearerToken);
+            await protectedLocalStorage.SetAsync(Keywords.RefreshTokenCookie, authResult.Response.RefreshToken);
+            await Init();
+        }
+        
         return authResult;
     }
 }

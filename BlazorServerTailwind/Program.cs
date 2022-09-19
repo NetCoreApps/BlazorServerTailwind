@@ -16,13 +16,13 @@ builder.Services.AddServerSideBlazor().AddCircuitOptions(o =>
 });
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<LocalStorage>();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/") });
-builder.Services.AddBlazorApiClient(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/"); // builder.HostEnvironment.BaseAddress);
+var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001/";
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl) });
+builder.Services.AddBlazorApiClient(baseUrl);
 
 builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<ServiceStackStateProvider>());
 builder.Services.AddScoped<ServiceStackStateProvider>();
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("/app/App_Data/"));
-
 
 var app = builder.Build();
 app.UseWebSockets();
