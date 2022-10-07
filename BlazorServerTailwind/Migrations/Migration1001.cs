@@ -15,4 +15,8 @@ public class Migration1001 : MigrationBase
             Name = "Test failure"
         });
     }
+
+    public override void Down()
+    {
+    }
 }
